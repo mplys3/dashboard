@@ -1,7 +1,9 @@
 name: Build and publish Docker image
+
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   docker:
@@ -11,19 +13,20 @@ jobs:
       contents: read
       packages: write
 
-steps:
-  - name: Checkout
-    uses: actions/checkout@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  - name: Login til GHCR
-    uses: docker/login-action@v3
-    with:
-      registry: ghcr.io
-      username: ${{ github.actor }}
-      password: ${{ secrets.GITHUB_TOKEN }}
-  - name: Build og push
-    uses: docker/build-push-action@v6
-    with:
-      context: .
-      push: true
-      tags: ghcr.io/mplys3/dashboard:latest
+      - name: Login til GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build og push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/mplys3/dashboard:latest
