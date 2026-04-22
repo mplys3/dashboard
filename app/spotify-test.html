@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spotify Sonos Test</title>
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="topbar-copy">
+          <div class="eyebrow">Spotify Test</div>
+          <h1>Spotify til Sonos</h1>
+          <p class="topbar-subtitle">Log ind med Spotify, find devices og test om Sonos kan styres direkte via Spotify Connect API.</p>
+        </div>
+        <div class="topbar-right">
+          <a class="btn" href="./index.html">Tilbage til dashboard</a>
+        </div>
+      </header>
+
+      <main class="layout-grid spotify-test-layout">
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Opsætning</h2>
+            <span class="panel-subtitle">Første skridt</span>
+          </div>
+          <div class="spotify-test-stack">
+            <div class="room-chip">
+              <span class="chip-label">Redirect URI</span>
+              <span class="chip-value" id="spotifyRedirectUri">-</span>
+            </div>
+            <div class="room-chip">
+              <span class="chip-label">Spotify Client ID</span>
+              <span class="chip-value" id="spotifyClientIdStatus">Ikke sat</span>
+            </div>
+            <div class="room-chip">
+              <span class="chip-label">Test-playliste</span>
+              <span class="chip-value" id="spotifyPlaylistHint">Bruger første playlist fra config eller feltet nedenfor</span>
+            </div>
+            <div class="entity-controls">
+              <button class="btn btn-primary" id="spotifyLoginBtn">Log ind med Spotify</button>
+              <button class="btn" id="spotifyRefreshBtn">Opdater devices</button>
+              <button class="btn btn-danger" id="spotifyLogoutBtn">Log ud</button>
+            </div>
+            <div class="empty-state" id="spotifyStatusBox">Venter på login.</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Afspilning</h2>
+            <span class="panel-subtitle">Bruges til test mod Sonos</span>
+          </div>
+          <div class="spotify-test-stack">
+            <div class="select-group">
+              <label class="select-label" for="spotifyPlaylistInput">Playlist URI eller link</label>
+              <input class="select-input" id="spotifyPlaylistInput" type="text" placeholder="spotify:playlist:... eller https://open.spotify.com/playlist/..." />
+            </div>
+            <div class="entity-controls">
+              <button class="btn btn-primary" id="spotifyPlaySelectedBtn">Afspil på valgt device</button>
+              <button class="btn" id="spotifyTransferBtn">Overfør playback</button>
+            </div>
+            <div class="empty-state" id="spotifyPlaybackBox">Ingen device valgt endnu.</div>
+          </div>
+        </section>
+
+        <section class="panel panel-rooms spotify-devices-panel">
+          <div class="panel-header">
+            <h2>Devices</h2>
+            <span class="panel-subtitle">Det er her vi ser om Sonos er med og om den er restricted</span>
+          </div>
+          <div class="room-grid spotify-device-grid" id="spotifyDevices"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./config/ha-config.js"></script>
+    <script src="./js/spotify-test.js"></script>
+  </body>
+</html>

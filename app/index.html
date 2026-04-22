@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home Dashboard</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230d1117'/%3E%3Cpath d='M18 35h28M22 27h20M26 19h12M24 45h16' stroke='%231ee887' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="topbar-copy">
+          <h1 id="dashboardTitle">Mit dashboard</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="clock" id="clock">--:--</div>
+          <div class="status-pill" id="haStatus">Forbinder...</div>
+        </div>
+      </header>
+
+      <main class="layout-grid">
+        <div class="layout-column layout-column-left">
+          <section class="panel panel-hero">
+            <div class="panel-header">
+              <h2>Oversigt</h2>
+              <span class="panel-subtitle">Hjemmet lige nu</span>
+            </div>
+            <div class="hero-stats" id="heroStats"></div>
+          </section>
+
+          <section class="panel panel-rooms">
+            <div class="panel-header">
+              <h2>Rum</h2>
+              <span class="panel-subtitle">Direkte styring pr. rum</span>
+            </div>
+            <div id="roomCards" class="room-grid"></div>
+          </section>
+        </div>
+
+        <aside class="layout-column layout-column-right">
+          <section class="panel panel-media">
+            <div class="panel-header">
+              <h2>Media</h2>
+              <span class="panel-subtitle">Det der spiller lige nu</span>
+            </div>
+            <div id="mediaCards" class="media-stack"></div>
+          </section>
+
+          <section class="panel panel-spotify" id="spotifyPanel">
+            <div class="panel-header">
+              <h2>Spotify</h2>
+              <span class="panel-subtitle">Playlister og grupper</span>
+            </div>
+            <div id="spotifyCards" class="media-stack"></div>
+          </section>
+
+          <section class="panel panel-calendar" id="calendarPanel">
+            <div class="panel-header">
+              <h2 id="calendarTitle">Familiekalender</h2>
+              <span class="panel-subtitle" id="calendarSubtitle">Kommende aftaler</span>
+            </div>
+            <div id="calendarCards" class="calendar-stack"></div>
+          </section>
+        </aside>
+      </main>
+
+      <section class="panel panel-technical">
+        <details class="technical-details">
+          <summary class="technical-summary">
+            <span>Teknisk status</span>
+            <span class="panel-subtitle">Unraid, elpris, ladning og afhentning</span>
+          </summary>
+          <div id="technicalStatusCards" class="technical-grid"></div>
+        </details>
+      </section>
+
+      <section class="news-bar">
+        <div class="news-bar-label">Nyheder</div>
+        <div class="news-bar-track" id="newsTicker">Henter overskrifter fra DR og TV 2 ...</div>
+      </section>
+    </div>
+
+    <script src="./config/ha-config.js"></script>
+    <script src="./js/app.js"></script>
+  </body>
+</html>
