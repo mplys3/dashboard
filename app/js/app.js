@@ -12,6 +12,7 @@
         entity_id: room.media,
         label: room.media_label || room.name,
         room: room.name,
+        volume_sensor: room.media_volume_sensor || room.volume_sensor || "",
         kind: "room-media",
       })),
     ...(config.spotify?.entity_id
@@ -164,6 +165,19 @@
 
   function getRoomMediaState(room) {
     return room.media ? stateCache.get(room.media) || null : null;
+  }
+
+  function getMediaVolumePercent(item, state) {
+    const sensorValue = toNumber(stateCache.get(item?.volume_sensor)?.state);
+    if (sensorValue != null) {
+      return clamp(Math.round(sensorValue), 0, 100);
+    }
+
+    if (state?.attributes?.volume_level != null) {
+      return clamp(Math.round(Number(state.attributes.volume_level) * 100), 0, 100);
+    }
+
+    return null;
   }
 
   function getRoomLightEntries(room) {
@@ -1110,12 +1124,15 @@
   async function createSpotifyNowPlayingCard(sourceItem, sourceState) {
     const block = document.createElement("section");
     block.className = `spotify-now-playing${isActivePlayback(sourceState) ? " is-active" : ""}`;
+    block.dataset.sourceEntity = sourceItem?.entity_id || "";
 
     const artworkUrl = await resolveMediaArtworkUrl(sourceState);
     const title = sourceState?.attributes?.media_title || "Ingen titel";
     const artist = sourceState?.attributes?.media_artist || "Ingen kunstner";
     const stateLabel = sourceState?.state || "ukendt";
     const subtitle = sourceItem ? `${sourceItem.label} (${sourceItem.room})` : "Spotify";
+    const signature = [sourceItem?.entity_id || "", title, artist, stateLabel, artworkUrl].join("|");
+    block.dataset.signature = signature;
 
     block.innerHTML = `
       <div class="spotify-now-playing-main">
@@ -1164,8 +1181,8 @@
       );
       block.appendChild(controls);
 
-      if (sourceState?.attributes?.volume_level != null) {
-        const volume = Math.round(sourceState.attributes.volume_level * 100);
+      const volume = getMediaVolumePercent(sourceItem, sourceState);
+      if (volume != null) {
         block.appendChild(
           createSlider("Volumen", volume, async (event) => {
             await callService("media_player", "volume_set", {
@@ -1215,6 +1232,37 @@
     const currentThumb = existingBlock.querySelector(".media-progress-thumb");
     if (currentThumb) {
       currentThumb.style.left = nextThumb;
+    }
+  }
+
+  async function patchSpotifyNowPlaying(existingBlock, sourceItem, sourceState) {
+    if (!existingBlock) return;
+
+    const artworkUrl = await resolveMediaArtworkUrl(sourceState);
+    const title = sourceState?.attributes?.media_title || "Ingen titel";
+    const artist = sourceState?.attributes?.media_artist || "Ingen kunstner";
+    const stateLabel = sourceState?.state || "ukendt";
+    const sourceEntityId = sourceItem?.entity_id || "";
+    const nextSignature = [sourceEntityId, title, artist, stateLabel, artworkUrl].join("|");
+
+    if (existingBlock.dataset.sourceEntity !== sourceEntityId || existingBlock.dataset.signature !== nextSignature) {
+      const replacement = await createSpotifyNowPlayingCard(sourceItem, sourceState);
+      existingBlock.replaceWith(replacement);
+      return;
+    }
+
+    if (sourceEntityId) {
+      patchMediaProgress(existingBlock, sourceEntityId, sourceState);
+    }
+
+    const volume = getMediaVolumePercent(sourceItem, sourceState);
+    const volumeSlider = existingBlock.querySelector('input[type="range"]');
+    const volumeValue = volumeSlider?.closest(".slider-group")?.querySelector(".slider-value");
+    if (volume != null && volumeSlider && document.activeElement !== volumeSlider) {
+      volumeSlider.value = String(volume);
+      if (volumeValue) {
+        volumeValue.textContent = `${volume}%`;
+      }
     }
   }
 
@@ -2152,7 +2200,7 @@
       const state = stateCache.get(item.entity_id);
       if (!state) continue;
 
-      const volume = state.attributes?.volume_level != null ? Math.round(state.attributes.volume_level * 100) : 0;
+      const volume = getMediaVolumePercent(item, state);
 
       const card = document.createElement("article");
       card.className = `media-card${isActivePlayback(state) ? " is-active" : ""}`;
@@ -2210,7 +2258,7 @@
       );
       card.appendChild(controls);
 
-      if (state.attributes?.volume_level != null) {
+      if (volume != null) {
         card.appendChild(
           createSlider("Volumen", volume, async (event) => {
             try {
@@ -2264,8 +2312,8 @@
       const previewItem = (selectedTargetState && isActivePlayback(selectedTargetState) ? selectedTargetItem : null) || activeTargetItem;
       const previewState = previewItem ? stateCache.get(previewItem.entity_id) : spotifyState;
       const nowPlaying = existingCard.querySelector(".spotify-now-playing");
-      if (nowPlaying && previewItem?.entity_id) {
-        patchMediaProgress(nowPlaying, previewItem.entity_id, previewState);
+      if (nowPlaying) {
+        await patchSpotifyNowPlaying(nowPlaying, previewItem, previewState);
       }
       existingCard.className = `media-card${isActivePlayback(spotifyState) ? " is-active" : ""}`;
       const headerState = existingCard.querySelector(".media-card-header > .media-card-state");
@@ -2516,6 +2564,8 @@
             ...getRoomEntities(room).map((entity) => entity.entity_id),
             room.climate,
             room.media,
+            room.media_volume_sensor,
+            room.volume_sensor,
           ]),
           ...mediaItems.map((item) => item.entity_id),
           ...getSystemEntityIds(),

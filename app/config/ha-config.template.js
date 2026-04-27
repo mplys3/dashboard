@@ -60,6 +60,8 @@ window.APP_CONFIG = {
     },
     {
       name: "Køkken",
+      media: "media_player.kokken",
+      media_volume_sensor: "sensor.vol_pct_koek",
       entities: [
         {
           type: "light",
