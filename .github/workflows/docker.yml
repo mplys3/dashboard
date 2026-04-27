@@ -2,7 +2,7 @@ name: Build and publish Docker image
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   workflow_dispatch:
 
 jobs:
@@ -29,4 +29,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/mplys3/dashboard:latest
+          tags: |
+            ghcr.io/mplys3/dashboard:latest
+            ghcr.io/mplys3/dashboard:${{ github.sha }}
