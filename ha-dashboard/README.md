@@ -9,8 +9,10 @@ The add-on serves the dashboard on port 80 and can also be opened through Home A
 By default the add-on looks for:
 
 ```text
-/config/ha-dashboard/ha-config.js
+/config/ha-config.js
 ```
+
+Inside the add-on this path is backed by Home Assistant's add-on config folder. On the host you will find it under `/addon_configs/...`.
 
 If that file exists, it is copied into the dashboard at startup. If it does not exist, the add-on creates it from the bundled config on first start.
 

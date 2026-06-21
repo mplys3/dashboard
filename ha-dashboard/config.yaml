@@ -20,9 +20,9 @@ ports_description:
   80/tcp: "Dashboard web interface"
 homeassistant_api: true
 map:
-  - type: homeassistant_config
+  - type: addon_config
     read_only: false
 options:
-  config_path: "/config/ha-dashboard/ha-config.js"
+  config_path: "/config/ha-config.js"
 schema:
   config_path: str
