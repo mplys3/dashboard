@@ -3,5 +3,5 @@
 ## 1.0.0
 
 - Initial Home Assistant add-on wrapper for the dashboard.
-- Uses the existing `ghcr.io/mplys3/dashboard:latest` image as base.
+- Builds directly from the public GitHub repository to avoid GHCR authentication during add-on installation.
 - Adds Home Assistant Supervisor API fallback for dashboard proxy calls.
