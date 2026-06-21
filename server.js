@@ -96,6 +96,14 @@ function createPkceChallenge(verifier) {
 function getHaConnection(req) {
   const haUrl = String(req.headers["x-ha-url"] || "").trim().replace(/\/+$/, "");
   const haToken = String(req.headers["x-ha-token"] || "").trim();
+  const isAddonMode = process.env.HA_DASHBOARD_ADDON_MODE === "1";
+
+  if (isAddonMode && process.env.SUPERVISOR_TOKEN) {
+    return {
+      haUrl: "http://supervisor/core",
+      haToken: process.env.SUPERVISOR_TOKEN,
+    };
+  }
 
   if (!haUrl || !/^https?:\/\//i.test(haUrl)) {
     return { error: "Manglende eller ugyldig Home Assistant URL." };

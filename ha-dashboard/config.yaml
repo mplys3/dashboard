@@ -1,0 +1,27 @@
+name: "Kronhjortloekken Dashboard"
+version: "1.0.0"
+slug: "kronhjortloekken_dashboard"
+description: "Custom dashboard for Home Assistant with rooms, media, Spotify, calendar and status panels."
+url: "https://github.com/mplys3/dashboard"
+arch:
+  - amd64
+startup: application
+boot: auto
+init: false
+ingress: true
+ingress_port: 80
+panel_icon: mdi:view-dashboard
+panel_title: Dashboard
+webui: "http://[HOST]:[PORT:80]"
+ports:
+  80/tcp: 8088
+ports_description:
+  80/tcp: "Dashboard web interface"
+homeassistant_api: true
+map:
+  - type: homeassistant_config
+    read_only: false
+options:
+  config_path: "/config/ha-dashboard/ha-config.js"
+schema:
+  config_path: str

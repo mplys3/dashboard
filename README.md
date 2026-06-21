@@ -28,6 +28,22 @@ Siden kører derefter på:
 
 - `http://UNRAID-IP:8088`
 
+## Home Assistant add-on
+
+Repoet kan også tilføjes som et Home Assistant add-on repository:
+
+```text
+https://github.com/mplys3/dashboard
+```
+
+Add-on'et ligger i `ha-dashboard/` og bruger `ghcr.io/mplys3/dashboard:latest` som base image. Når det kører som add-on, bruger serveren Home Assistants Supervisor API internt, så `haUrl` og `haToken` ikke behøver at være sat i frontend-configen.
+
+Hvis du vil overskrive dashboard-konfigurationen uden at bygge nyt image, kan du lægge en fil her:
+
+```text
+/config/ha-dashboard/ha-config.js
+```
+
 ## Bemærkninger
 
 - Token ligger stadig i frontend og løsningen bør kun bruges internt på dit LAN.
