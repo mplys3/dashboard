@@ -5,6 +5,7 @@ description: "Custom dashboard for Home Assistant with rooms, media, Spotify, ca
 url: "https://github.com/mplys3/dashboard"
 arch:
   - amd64
+  - aarch64
 startup: application
 boot: auto
 init: false
