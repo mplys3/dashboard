@@ -12,6 +12,6 @@ By default the add-on looks for:
 /config/ha-dashboard/ha-config.js
 ```
 
-If that file exists, it is copied into the dashboard at startup. If it does not exist, the bundled config is used.
+If that file exists, it is copied into the dashboard at startup. If it does not exist, the add-on creates it from the bundled config on first start.
 
 When running as a Home Assistant add-on, `haUrl` and `haToken` are intentionally cleared at startup. The server talks to Home Assistant through the Supervisor API using the internal add-on token.

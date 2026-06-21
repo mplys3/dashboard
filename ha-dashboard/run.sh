@@ -25,7 +25,9 @@ elif [ -f "${DEFAULT_CONFIG_PATH}" ]; then
   echo "Using dashboard config from ${DEFAULT_CONFIG_PATH}"
   cp "${DEFAULT_CONFIG_PATH}" "${APP_CONFIG}"
 else
-  echo "No external dashboard config found. Using bundled config."
+  echo "No external dashboard config found. Creating ${CONFIG_PATH} from bundled config."
+  mkdir -p "$(dirname "${CONFIG_PATH}")"
+  cp "${APP_CONFIG}" "${CONFIG_PATH}"
 fi
 
 node - <<'NODE'
