@@ -60,7 +60,7 @@ window.APP_CONFIG = {
         {
           type: "light",
           label: "Spots",
-          entity_id: "light.spots_kontor",
+          entity_id: "light.dimmer_kontor",
           allow_brightness: true,
         },
       ],

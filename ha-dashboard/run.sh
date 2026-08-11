@@ -36,6 +36,9 @@ else
   cp "${APP_CONFIG}" "${CONFIG_PATH}"
 fi
 
+# Keep existing mounted configs working after the office spots moved to Zigbee.
+sed -i 's/light\.spots_kontor/light.dimmer_kontor/g' "${APP_CONFIG}"
+
 node - <<'NODE'
 const fs = require("fs");
 const file = "/app/app/config/ha-config.js";
