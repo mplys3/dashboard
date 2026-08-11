@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4
+
+- Restores the original responsive overview-card layout.
+- Moves the weekly meal plan into its own panel above Media in the right column.
+
 ## 1.0.3
 
 - Cache-busts dashboard assets so browsers load the new meal-plan UI immediately after deployment.

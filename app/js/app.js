@@ -104,6 +104,7 @@
     clock: document.getElementById("clock"),
     haStatus: document.getElementById("haStatus"),
     heroStats: document.getElementById("heroStats"),
+    mealPlanCard: document.getElementById("mealPlanCard"),
     calendarPanel: document.getElementById("calendarPanel"),
     calendarTitle: document.getElementById("calendarTitle"),
     calendarSubtitle: document.getElementById("calendarSubtitle"),
@@ -1395,21 +1396,19 @@
   function createMealPlanCard() {
     const plan = mealPlanState.plan;
     const card = document.createElement("article");
-    card.className = `hero-card hero-card-meal-plan${plan ? " is-active" : ""}${mealPlannerConfig.webUrl ? " is-clickable" : ""}`;
+    card.className = `media-card meal-plan-card${plan ? " is-active" : ""}${mealPlannerConfig.webUrl ? " is-clickable" : ""}`;
 
     const header = document.createElement("div");
-    header.className = "hero-card-top";
+    header.className = "media-card-header";
     const label = document.createElement("div");
-    label.className = "hero-card-label";
+    label.className = "media-card-title";
     label.textContent = "Ugens madplan";
     header.appendChild(label);
 
-    if (plan?.startDate) {
-      const pill = document.createElement("div");
-      pill.className = "hero-card-pill";
-      pill.textContent = `Uge ${getIsoWeekNumber(plan.startDate)}`;
-      header.appendChild(pill);
-    }
+    const state = document.createElement("div");
+    state.className = "media-card-state";
+    state.textContent = plan?.startDate ? `Uge ${getIsoWeekNumber(plan.startDate)}` : "Meal Planner";
+    header.appendChild(state);
 
     card.appendChild(header);
 
@@ -1455,6 +1454,12 @@
     }
 
     return card;
+  }
+
+  function renderMealPlan() {
+    if (!elements.mealPlanCard) return;
+    elements.mealPlanCard.innerHTML = "";
+    elements.mealPlanCard.appendChild(createMealPlanCard());
   }
 
   async function fetchMealPlan() {
@@ -1880,7 +1885,6 @@
           : "Affaldskalender mangler data",
         active: Boolean(nextWastePickup && nextWastePickup.days != null && nextWastePickup.days <= 3),
       }),
-      createMealPlanCard(),
       createHeroInsightCard({
         label: "Varmest nu",
         value: warmestRoom ? warmestRoom.room : "Ingen data",
@@ -2732,6 +2736,7 @@
 
   async function renderAll() {
     renderHeroStats();
+    renderMealPlan();
     await renderMedia();
     await renderSpotifyPanel();
     renderRooms();
@@ -2783,7 +2788,7 @@
       setInterval(fetchNews, 15 * 60 * 1000);
       setInterval(async () => {
         await fetchMealPlan();
-        renderHeroStats();
+        renderMealPlan();
       }, 15 * 60 * 1000);
     } catch (error) {
       console.error(error);
