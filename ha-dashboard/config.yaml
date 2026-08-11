@@ -1,5 +1,5 @@
 name: "Kronhjortloekken Dashboard"
-version: "1.0.1"
+version: "1.0.2"
 slug: "kronhjortloekken_dashboard"
 description: "Custom dashboard for Home Assistant with rooms, media, Spotify, calendar and status panels."
 url: "https://github.com/mplys3/dashboard"

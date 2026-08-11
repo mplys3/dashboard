@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2
+
+- Invalidates the Docker source layer for every add-on version so deployments always include the latest dashboard assets.
+
 ## 1.0.1
 
 - Adds a responsive weekly meal-plan overview backed by the local Meal Planner.

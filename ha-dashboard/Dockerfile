@@ -2,7 +2,10 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache git \
+ARG BUILD_VERSION
+
+RUN echo "Building dashboard ${BUILD_VERSION}" \
+  && apk add --no-cache git \
   && git clone --depth 1 https://github.com/mplys3/dashboard.git /tmp/dashboard \
   && cp /tmp/dashboard/package.json ./ \
   && npm install --omit=dev \
