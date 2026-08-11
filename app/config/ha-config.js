@@ -7,6 +7,11 @@ window.APP_CONFIG = {
   timeZone: "Europe/Copenhagen",
   refreshIntervalMs: 5000,
 
+  mealPlanner: {
+    endpoint: "/api/meal-plan",
+    webUrl: "http://10.0.0.82:8765",
+  },
+
   calendar: {
     entityId: "calendar.skipsen_og_mulles_kalender",
     label: "Mulle Og Skipsens Kalender",

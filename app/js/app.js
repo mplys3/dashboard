@@ -88,6 +88,15 @@
     cpuTemp: [],
   };
   const technicalHistoryWindowMs = 10 * 60 * 1000;
+  const mealPlannerConfig = {
+    endpoint: config.mealPlanner?.endpoint || "/api/meal-plan",
+    webUrl: config.mealPlanner?.webUrl || "http://10.0.0.82:8765",
+  };
+  const mealPlanState = {
+    plan: null,
+    loading: true,
+    error: "",
+  };
 
   const elements = {
     title: document.getElementById("dashboardTitle"),
@@ -1342,6 +1351,131 @@
     return card;
   }
 
+  function localDateKey(date = new Date()) {
+    return new Intl.DateTimeFormat("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      timeZone: config.timeZone || "Europe/Copenhagen",
+    }).format(date);
+  }
+
+  function getIsoWeekNumber(dateKey) {
+    const date = new Date(`${dateKey}T12:00:00Z`);
+    const day = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - day);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+    return Math.ceil(((date - yearStart) / 86400000 + 1) / 7);
+  }
+
+  function selectCurrentMealPlan(plans) {
+    const today = localDateKey();
+    const normalized = plans
+      .filter((plan) => plan && Array.isArray(plan.days) && plan.days.length)
+      .map((plan) => ({
+        ...plan,
+        firstDate: plan.days.map((day) => day.date).filter(Boolean).sort()[0] || plan.startDate,
+        lastDate: plan.days.map((day) => day.date).filter(Boolean).sort().at(-1) || plan.startDate,
+      }))
+      .filter((plan) => plan.firstDate && plan.lastDate)
+      .sort((left, right) => left.firstDate.localeCompare(right.firstDate));
+
+    return (
+      normalized.find((plan) => plan.firstDate <= today && plan.lastDate >= today) ||
+      normalized.find((plan) => plan.firstDate > today) ||
+      normalized.at(-1) ||
+      null
+    );
+  }
+
+  function openMealPlanner() {
+    window.open(mealPlannerConfig.webUrl, "_blank", "noopener,noreferrer");
+  }
+
+  function createMealPlanCard() {
+    const plan = mealPlanState.plan;
+    const card = document.createElement("article");
+    card.className = `hero-card hero-card-meal-plan${plan ? " is-active" : ""}${mealPlannerConfig.webUrl ? " is-clickable" : ""}`;
+
+    const header = document.createElement("div");
+    header.className = "hero-card-top";
+    const label = document.createElement("div");
+    label.className = "hero-card-label";
+    label.textContent = "Ugens madplan";
+    header.appendChild(label);
+
+    if (plan?.startDate) {
+      const pill = document.createElement("div");
+      pill.className = "hero-card-pill";
+      pill.textContent = `Uge ${getIsoWeekNumber(plan.startDate)}`;
+      header.appendChild(pill);
+    }
+
+    card.appendChild(header);
+
+    if (plan) {
+      const days = document.createElement("div");
+      days.className = "meal-plan-days";
+      const today = localDateKey();
+
+      plan.days.forEach((day) => {
+        const item = document.createElement("div");
+        item.className = `meal-plan-day${day.date === today ? " is-today" : ""}`;
+        const weekday = document.createElement("div");
+        weekday.className = "meal-plan-weekday";
+        weekday.textContent = day.weekday || "Dag";
+        const meal = document.createElement("div");
+        meal.className = "meal-plan-meal";
+        meal.textContent = day.mealName || "Ikke planlagt";
+        item.append(weekday, meal);
+        days.appendChild(item);
+      });
+
+      card.appendChild(days);
+    } else {
+      const message = document.createElement("div");
+      message.className = "entity-secondary meal-plan-message";
+      message.textContent = mealPlanState.loading
+        ? "Henter madplanen…"
+        : mealPlanState.error || "Der er ikke lavet en madplan endnu.";
+      card.appendChild(message);
+    }
+
+    if (mealPlannerConfig.webUrl) {
+      card.tabIndex = 0;
+      card.setAttribute("role", "link");
+      card.setAttribute("aria-label", "Ugens madplan: åbn Meal Planner");
+      card.addEventListener("click", openMealPlanner);
+      card.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openMealPlanner();
+        }
+      });
+    }
+
+    return card;
+  }
+
+  async function fetchMealPlan() {
+    mealPlanState.loading = true;
+    mealPlanState.error = "";
+
+    try {
+      const response = await fetch(mealPlannerConfig.endpoint);
+      if (!response.ok) {
+        throw new Error(`Madplanshentning fejlede (${response.status})`);
+      }
+      const payload = await response.json();
+      mealPlanState.plan = selectCurrentMealPlan(Array.isArray(payload.plans) ? payload.plans : []);
+    } catch (error) {
+      console.error(error);
+      mealPlanState.error = "Madplanen er midlertidigt utilgængelig.";
+    } finally {
+      mealPlanState.loading = false;
+    }
+  }
+
   function ensureWeatherModal() {
     if (weatherModalElements) return weatherModalElements;
 
@@ -1746,6 +1880,7 @@
           : "Affaldskalender mangler data",
         active: Boolean(nextWastePickup && nextWastePickup.days != null && nextWastePickup.days <= 3),
       }),
+      createMealPlanCard(),
       createHeroInsightCard({
         label: "Varmest nu",
         value: warmestRoom ? warmestRoom.room : "Ingen data",
@@ -2626,7 +2761,7 @@
 
     try {
       const summary = await fetchInitialStates();
-      await fetchTechnicalHistory();
+      await Promise.all([fetchTechnicalHistory(), fetchMealPlan()]);
       await renderAll();
       await fetchCalendar();
       await fetchNews();
@@ -2646,6 +2781,10 @@
       }, 60 * 1000);
       setInterval(fetchCalendar, 15 * 60 * 1000);
       setInterval(fetchNews, 15 * 60 * 1000);
+      setInterval(async () => {
+        await fetchMealPlan();
+        renderHeroStats();
+      }, 15 * 60 * 1000);
     } catch (error) {
       console.error(error);
       setStatus("error", "Fejl");

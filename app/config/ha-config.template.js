@@ -7,6 +7,11 @@ window.APP_CONFIG = {
   timeZone: "Europe/Copenhagen",
   refreshIntervalMs: 5000,
 
+  mealPlanner: {
+    endpoint: "/api/meal-plan",
+    webUrl: "http://MEALPLANNER-IP:8765",
+  },
+
   calendar: {
     entityId: "calendar.familie",
     label: "Familiekalender",

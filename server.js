@@ -4,6 +4,7 @@ const express = require("express");
 const cheerio = require("cheerio");
 
 const PORT = Number(process.env.PORT || 80);
+const MEAL_PLANNER_URL = String(process.env.MEAL_PLANNER_URL || "http://10.0.0.82:8765").replace(/\/+$/, "");
 const app = express();
 app.use(express.json());
 
@@ -274,6 +275,31 @@ app.get("/api/news", async (_req, res) => {
     res.status(502).json({
       error: error.message,
       items: [],
+    });
+  }
+});
+
+app.get("/api/meal-plan", async (_req, res) => {
+  try {
+    const response = await fetch(`${MEAL_PLANNER_URL}/api/plans`, {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Madplansserveren svarede med status ${response.status}`);
+    }
+
+    const plans = await response.json();
+    if (!Array.isArray(plans)) {
+      throw new Error("Madplansserveren returnerede et ugyldigt svar");
+    }
+
+    res.json({ plans, fetchedAt: new Date().toISOString() });
+  } catch (error) {
+    res.status(502).json({
+      error: `Kunne ikke hente ugens madplan: ${error.message}`,
+      plans: [],
     });
   }
 });

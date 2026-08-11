@@ -6,6 +6,7 @@ Rumopdelt dashboard til Home Assistant med:
 - Sonos- og Spotify-kontrol
 - valg af Spotify-playlister via `media_player.play_media`
 - bundlinje med overskrifter fra DR og TV 2 hentet server-side
+- ugens madplan hentet fra den lokale Meal Planner
 
 ## Konfiguration
 
@@ -15,6 +16,9 @@ Ret `app/config/ha-config.js`:
 - `haToken`
 - `rooms`
 - `spotify.playlists`
+- `mealPlanner.webUrl`
+
+Dashboard-serveren henter planerne fra `http://10.0.0.82:8765` som standard. En anden adresse kan sættes med miljøvariablen `MEAL_PLANNER_URL`.
 
 Spotify-playlister kan være almindelige playlist-links eller `spotify:playlist:...` URI'er.
 
