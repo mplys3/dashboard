@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.3
+
+- Cache-busts dashboard assets so browsers load the new meal-plan UI immediately after deployment.
+
 ## 1.0.2
 
 - Invalidates the Docker source layer for every add-on version so deployments always include the latest dashboard assets.
