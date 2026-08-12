@@ -407,7 +407,7 @@
     return Math.min(duration, Math.max(0, basePosition + elapsedSinceUpdate));
   }
 
-  function getElectricityHourlySeries(state) {
+  function getElectricityHourlySeries(state, maxHours = 8) {
     const rawToday = Array.isArray(state?.attributes?.raw_today) ? state.attributes.raw_today : [];
     const rawTomorrow = Array.isArray(state?.attributes?.raw_tomorrow) ? state.attributes.raw_tomorrow : [];
     const source = [...rawToday, ...rawTomorrow];
@@ -432,6 +432,7 @@
     const currentHour = new Date();
     currentHour.setMinutes(0, 0, 0);
     const currentHourTime = currentHour.getTime();
+    const forecastEndTime = currentHourTime + 24 * 60 * 60 * 1000;
 
     return Array.from(hourly.values())
       .map((bucket) => ({
@@ -439,8 +440,9 @@
         label: bucket.label,
         value: bucket.prices.reduce((sum, price) => sum + price, 0) / bucket.prices.length,
       }))
-      .filter((bucket) => bucket.time >= currentHourTime)
-      .slice(0, 8);
+      .filter((bucket) => bucket.time >= currentHourTime && bucket.time < forecastEndTime)
+      .sort((left, right) => left.time - right.time)
+      .slice(0, maxHours);
   }
 
   function getChargerStatusMeta(state) {
@@ -1779,6 +1781,115 @@
     return svg;
   }
 
+  function createElectricityForecastChart(series) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "electricity-forecast-chart";
+
+    if (!series.length) {
+      wrapper.innerHTML = '<div class="empty-state">Ingen kommende timepriser er tilgængelige endnu.</div>';
+      return wrapper;
+    }
+
+    const width = 760;
+    const height = 190;
+    const padding = { top: 18, right: 16, bottom: 38, left: 52 };
+    const values = series.map((entry) => entry.value);
+    const dataMin = Math.min(...values);
+    const dataMax = Math.max(...values);
+    const chartMin = Math.min(0, dataMin);
+    const chartMax = Math.max(0, dataMax);
+    const range = Math.max(chartMax - chartMin, 0.1);
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+    const xFor = (index) => padding.left + (series.length === 1 ? chartWidth / 2 : (index / (series.length - 1)) * chartWidth);
+    const yFor = (value) => padding.top + ((chartMax - value) / range) * chartHeight;
+    const coordinates = series.map((entry, index) => ({ x: xFor(index), y: yFor(entry.value), entry }));
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    svg.setAttribute("preserveAspectRatio", "none");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", `Elpris de næste ${series.length} timer`);
+
+    [0, 0.5, 1].forEach((ratio) => {
+      const value = chartMax - ratio * range;
+      const y = yFor(value);
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", String(padding.left));
+      line.setAttribute("x2", String(width - padding.right));
+      line.setAttribute("y1", y.toFixed(2));
+      line.setAttribute("y2", y.toFixed(2));
+      line.classList.add("electricity-chart-gridline");
+      svg.appendChild(line);
+
+      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      label.setAttribute("x", String(padding.left - 9));
+      label.setAttribute("y", String(y + 4));
+      label.setAttribute("text-anchor", "end");
+      label.classList.add("electricity-chart-label");
+      label.textContent = value.toFixed(2);
+      svg.appendChild(label);
+    });
+
+    const linePath = coordinates
+      .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+      .join(" ");
+    const baselineY = yFor(chartMin);
+    const area = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    area.setAttribute(
+      "d",
+      `${linePath} L ${coordinates.at(-1).x.toFixed(2)} ${baselineY.toFixed(2)} L ${coordinates[0].x.toFixed(2)} ${baselineY.toFixed(2)} Z`
+    );
+    area.classList.add("electricity-chart-area");
+    svg.appendChild(area);
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    line.setAttribute("d", linePath);
+    line.classList.add("electricity-chart-line");
+    svg.appendChild(line);
+
+    const labelStep = Math.max(1, Math.ceil(series.length / 8));
+    coordinates.forEach((point, index) => {
+      const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("cx", point.x.toFixed(2));
+      dot.setAttribute("cy", point.y.toFixed(2));
+      dot.setAttribute("r", index === 0 ? "4.5" : "3");
+      dot.classList.add("electricity-chart-point");
+      if (index === 0) dot.classList.add("is-current");
+      const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      title.textContent = `Kl. ${point.entry.label}: ${formatPrice(point.entry.value)} /kWh`;
+      dot.appendChild(title);
+      svg.appendChild(dot);
+
+      if (index % labelStep === 0 || index === series.length - 1) {
+        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        label.setAttribute("x", point.x.toFixed(2));
+        label.setAttribute("y", String(height - 12));
+        label.setAttribute("text-anchor", "middle");
+        label.classList.add("electricity-chart-label");
+        label.textContent = point.entry.label;
+        svg.appendChild(label);
+      }
+    });
+
+    wrapper.appendChild(svg);
+    return wrapper;
+  }
+
+  function createElectricityForecastCard(state) {
+    const series = getElectricityHourlySeries(state, 24);
+    const card = createTechnicalMetricCard(
+      "Elpris · kommende døgn",
+      state ? `${formatPrice(state.attributes?.current_price)} /kWh` : "--",
+      series.length
+        ? `${series.length} kendte timer · til kl. ${series.at(-1).label}`
+        : "Ingen kommende priser er kendt"
+    );
+    card.classList.add("status-card-electricity");
+    card.appendChild(createElectricityForecastChart(series));
+    return card;
+  }
+
   function attachSeekBehavior(trackElement, entityId, duration) {
     if (!trackElement || !entityId || !Number.isFinite(duration) || duration <= 0) {
       return;
@@ -2608,6 +2719,7 @@
     const cpuState = getSystemState(systemStatusConfig.unraid.cpu);
     const cpuTempState = getSystemState(systemStatusConfig.unraid.cpuTemp);
     const uptimeState = getSystemState(systemStatusConfig.unraid.uptime);
+    const electricityState = getSystemState(systemStatusConfig.electricity);
     pushTechnicalHistory("ram", ramState?.state);
     pushTechnicalHistory("cpu", cpuState?.state);
     pushTechnicalHistory("cpuTemp", cpuTempState?.state);
@@ -2633,6 +2745,7 @@
         uptimeState ? formatUptimeFromState(uptimeState) : "--",
         uptimeState ? `${uptimeState.attributes?.hostname || "Unraid"} · ${uptimeState.attributes?.version || ""}` : "Ingen data"
       ),
+      createElectricityForecastCard(electricityState),
     ];
 
     if (cards[0]) {

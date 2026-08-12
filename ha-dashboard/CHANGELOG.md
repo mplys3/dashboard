@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.5
+
+- Adds a full-width electricity-price forecast chart to Technical status.
+- Shows up to the next 24 known hourly prices and stops at the last available price.
+
 ## 1.0.4
 
 - Restores the original responsive overview-card layout.
