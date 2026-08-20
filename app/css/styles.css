@@ -209,6 +209,7 @@ h2 {
 }
 
 .meal-plan-day {
+  position: relative;
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr);
   align-items: baseline;
@@ -218,11 +219,19 @@ h2 {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.025);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.meal-plan-day.is-today {
+.meal-plan-day.is-today,
+.meal-plan-day:hover,
+.meal-plan-day:focus-visible,
+.meal-plan-day.is-open {
   border-color: rgba(35, 229, 139, 0.34);
   background: var(--accent-soft);
+  outline: none;
 }
 
 .meal-plan-weekday {
@@ -242,6 +251,75 @@ h2 {
 
 .meal-plan-message {
   padding: 2px 0;
+}
+
+.meal-plan-ingredients {
+  position: absolute;
+  z-index: 20;
+  top: 50%;
+  right: calc(100% + 12px);
+  display: none;
+  width: min(360px, 42vw);
+  max-height: min(480px, 65vh);
+  padding: 14px;
+  border: 1px solid rgba(35, 229, 139, 0.28);
+  border-radius: var(--radius-lg);
+  background: #111a24;
+  box-shadow: var(--shadow);
+  cursor: default;
+  overflow-y: auto;
+  transform: translateY(-50%);
+}
+
+.meal-plan-day:nth-last-child(-n + 2) .meal-plan-ingredients {
+  top: auto;
+  bottom: -1px;
+  transform: none;
+}
+
+.meal-plan-day:hover .meal-plan-ingredients,
+.meal-plan-day:focus-visible .meal-plan-ingredients,
+.meal-plan-day.is-open .meal-plan-ingredients {
+  display: block;
+}
+
+.meal-plan-ingredients-title,
+.meal-plan-servings,
+.meal-plan-ingredient-list,
+.meal-plan-ingredient,
+.meal-plan-ingredients-empty {
+  display: block;
+}
+
+.meal-plan-ingredients-title {
+  padding-right: 12px;
+  font-size: 0.98rem;
+  font-weight: 750;
+}
+
+.meal-plan-servings,
+.meal-plan-ingredients-empty {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.meal-plan-ingredient-list {
+  margin-top: 10px;
+}
+
+.meal-plan-ingredient {
+  padding: 4px 0 4px 13px;
+  color: #dfeaf3;
+  font-size: 0.84rem;
+  line-height: 1.3;
+}
+
+.meal-plan-ingredient::before {
+  content: "•";
+  float: left;
+  margin-left: -13px;
+  color: var(--accent);
 }
 
 .hero-card-top {
@@ -650,16 +728,16 @@ h2 {
   box-shadow: 0 0 0 1px rgba(35, 229, 139, 0.14) inset;
 }
 
-.meal-plan-card.is-clickable {
+.meal-plan-card-link {
   cursor: pointer;
-  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+  border-radius: var(--radius-md);
+  transition: color 120ms ease, background 120ms ease;
 }
 
-.meal-plan-card.is-clickable:hover,
-.meal-plan-card.is-clickable:focus-visible {
-  transform: translateY(-1px);
-  border-color: rgba(74, 168, 255, 0.28);
-  box-shadow: 0 0 0 1px rgba(74, 168, 255, 0.14) inset;
+.meal-plan-card-link:hover,
+.meal-plan-card-link:focus-visible {
+  color: var(--accent);
+  background: rgba(35, 229, 139, 0.06);
   outline: none;
 }
 
@@ -1087,6 +1165,24 @@ h2 {
 
   .layout-column {
     gap: 18px;
+  }
+
+  .meal-plan-ingredients {
+    position: static;
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-top: 4px;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .meal-plan-day:hover .meal-plan-ingredients {
+    display: none;
+  }
+
+  .meal-plan-day.is-open .meal-plan-ingredients,
+  .meal-plan-day:focus-visible .meal-plan-ingredients {
+    display: block;
   }
 }
 

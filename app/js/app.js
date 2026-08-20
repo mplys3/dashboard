@@ -94,6 +94,7 @@
   };
   const mealPlanState = {
     plan: null,
+    meals: new Map(),
     loading: true,
     error: "",
   };
@@ -1395,10 +1396,92 @@
     window.open(mealPlannerConfig.webUrl, "_blank", "noopener,noreferrer");
   }
 
+  function formatIngredient(ingredient) {
+    const amount = toNumber(ingredient?.amount);
+    const formattedAmount = amount == null
+      ? ""
+      : new Intl.NumberFormat("da-DK", { maximumFractionDigits: 2 }).format(amount);
+    return [formattedAmount, ingredient?.unit, ingredient?.item].filter(Boolean).join(" ");
+  }
+
+  function getMealForPlanDay(day) {
+    const mealId = day?.sourceMealId || day?.mealId;
+    return mealId ? mealPlanState.meals.get(mealId) || null : null;
+  }
+
+  function closeOpenIngredientPopovers(except = null) {
+    elements.mealPlanCard?.querySelectorAll(".meal-plan-day.is-open").forEach((item) => {
+      if (item === except) return;
+      item.classList.remove("is-open");
+      item.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  function createMealPlanDay(day, today) {
+    const recipe = getMealForPlanDay(day);
+    const ingredients = Array.isArray(recipe?.ingredients) ? recipe.ingredients : [];
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = `meal-plan-day${day.date === today ? " is-today" : ""}`;
+    item.setAttribute("aria-expanded", "false");
+
+    const weekday = document.createElement("span");
+    weekday.className = "meal-plan-weekday";
+    weekday.textContent = day.weekday || "Dag";
+    const meal = document.createElement("span");
+    meal.className = "meal-plan-meal";
+    meal.textContent = day.mealName || "Ikke planlagt";
+    item.append(weekday, meal);
+
+    const popover = document.createElement("span");
+    popover.className = "meal-plan-ingredients";
+    popover.setAttribute("role", "tooltip");
+
+    const title = document.createElement("span");
+    title.className = "meal-plan-ingredients-title";
+    title.textContent = recipe?.name || day.sourceMealName || day.mealName || "Ingredienser";
+    popover.appendChild(title);
+
+    if (recipe?.servings) {
+      const servings = document.createElement("span");
+      servings.className = "meal-plan-servings";
+      servings.textContent = `${recipe.servings} portioner`;
+      popover.appendChild(servings);
+    }
+
+    if (ingredients.length) {
+      const list = document.createElement("span");
+      list.className = "meal-plan-ingredient-list";
+      ingredients.forEach((ingredient) => {
+        const line = document.createElement("span");
+        line.className = "meal-plan-ingredient";
+        line.textContent = formatIngredient(ingredient);
+        list.appendChild(line);
+      });
+      popover.appendChild(list);
+    } else {
+      const empty = document.createElement("span");
+      empty.className = "meal-plan-ingredients-empty";
+      empty.textContent = "Ingen ingredienser registreret.";
+      popover.appendChild(empty);
+    }
+
+    item.appendChild(popover);
+    item.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const shouldOpen = !item.classList.contains("is-open");
+      closeOpenIngredientPopovers(item);
+      item.classList.toggle("is-open", shouldOpen);
+      item.setAttribute("aria-expanded", String(shouldOpen));
+    });
+    item.addEventListener("keydown", (event) => event.stopPropagation());
+    return item;
+  }
+
   function createMealPlanCard() {
     const plan = mealPlanState.plan;
     const card = document.createElement("article");
-    card.className = `media-card meal-plan-card${plan ? " is-active" : ""}${mealPlannerConfig.webUrl ? " is-clickable" : ""}`;
+    card.className = `media-card meal-plan-card${plan ? " is-active" : ""}`;
 
     const header = document.createElement("div");
     header.className = "media-card-header";
@@ -1412,6 +1495,20 @@
     state.textContent = plan?.startDate ? `Uge ${getIsoWeekNumber(plan.startDate)}` : "Meal Planner";
     header.appendChild(state);
 
+    if (mealPlannerConfig.webUrl) {
+      header.classList.add("meal-plan-card-link");
+      header.tabIndex = 0;
+      header.setAttribute("role", "link");
+      header.setAttribute("aria-label", "Åbn Meal Planner");
+      header.addEventListener("click", openMealPlanner);
+      header.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openMealPlanner();
+        }
+      });
+    }
+
     card.appendChild(header);
 
     if (plan) {
@@ -1420,16 +1517,7 @@
       const today = localDateKey();
 
       plan.days.forEach((day) => {
-        const item = document.createElement("div");
-        item.className = `meal-plan-day${day.date === today ? " is-today" : ""}`;
-        const weekday = document.createElement("div");
-        weekday.className = "meal-plan-weekday";
-        weekday.textContent = day.weekday || "Dag";
-        const meal = document.createElement("div");
-        meal.className = "meal-plan-meal";
-        meal.textContent = day.mealName || "Ikke planlagt";
-        item.append(weekday, meal);
-        days.appendChild(item);
+        days.appendChild(createMealPlanDay(day, today));
       });
 
       card.appendChild(days);
@@ -1440,19 +1528,6 @@
         ? "Henter madplanen…"
         : mealPlanState.error || "Der er ikke lavet en madplan endnu.";
       card.appendChild(message);
-    }
-
-    if (mealPlannerConfig.webUrl) {
-      card.tabIndex = 0;
-      card.setAttribute("role", "link");
-      card.setAttribute("aria-label", "Ugens madplan: åbn Meal Planner");
-      card.addEventListener("click", openMealPlanner);
-      card.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          openMealPlanner();
-        }
-      });
     }
 
     return card;
@@ -1475,6 +1550,11 @@
       }
       const payload = await response.json();
       mealPlanState.plan = selectCurrentMealPlan(Array.isArray(payload.plans) ? payload.plans : []);
+      mealPlanState.meals = new Map(
+        (Array.isArray(payload.meals) ? payload.meals : [])
+          .filter((meal) => meal?.id)
+          .map((meal) => [meal.id, meal])
+      );
     } catch (error) {
       console.error(error);
       mealPlanState.error = "Madplanen er midlertidigt utilgængelig.";
@@ -1482,6 +1562,8 @@
       mealPlanState.loading = false;
     }
   }
+
+  document.addEventListener("click", () => closeOpenIngredientPopovers());
 
   function ensureWeatherModal() {
     if (weatherModalElements) return weatherModalElements;

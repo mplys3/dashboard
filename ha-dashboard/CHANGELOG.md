@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.6
+
+- Shows every recipe ingredient when hovering, focusing or tapping a meal-plan day.
+- Resolves leftover days to the original meal and reads ingredients directly from the meal catalog.
+
 ## 1.0.5
 
 - Adds a full-width electricity-price forecast chart to Technical status.

@@ -281,25 +281,42 @@ app.get("/api/news", async (_req, res) => {
 
 app.get("/api/meal-plan", async (_req, res) => {
   try {
-    const response = await fetch(`${MEAL_PLANNER_URL}/api/plans`, {
-      headers: { accept: "application/json" },
-      signal: AbortSignal.timeout(8000),
-    });
+    const [plansResponse, mealsResponse] = await Promise.all([
+      fetch(`${MEAL_PLANNER_URL}/api/plans`, {
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(8000),
+      }),
+      fetch(`${MEAL_PLANNER_URL}/api/meals`, {
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(8000),
+      }),
+    ]);
 
-    if (!response.ok) {
-      throw new Error(`Madplansserveren svarede med status ${response.status}`);
+    if (!plansResponse.ok) {
+      throw new Error(`Madplansserveren svarede med status ${plansResponse.status}`);
     }
 
-    const plans = await response.json();
-    if (!Array.isArray(plans)) {
+    const plans = await plansResponse.json();
+    const meals = mealsResponse.ok ? await mealsResponse.json() : [];
+    if (!Array.isArray(plans) || !Array.isArray(meals)) {
       throw new Error("Madplansserveren returnerede et ugyldigt svar");
     }
 
-    res.json({ plans, fetchedAt: new Date().toISOString() });
+    res.json({
+      plans,
+      meals: meals.map((meal) => ({
+        id: meal.id,
+        name: meal.name,
+        servings: meal.servings,
+        ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],
+      })),
+      fetchedAt: new Date().toISOString(),
+    });
   } catch (error) {
     res.status(502).json({
       error: `Kunne ikke hente ugens madplan: ${error.message}`,
       plans: [],
+      meals: [],
     });
   }
 });
